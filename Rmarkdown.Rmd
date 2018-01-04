@@ -1,0 +1,406 @@
+---
+title: "基于秩的集成特征选择方法——统计学——慕聪——13336151"
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(knitr)
+library(highcharter)
+
+
+load('data9.rda')
+
+dataA1 <- read.csv('dataA1.csv', fileEncoding = 'GBK')
+dataA3 <- read.csv('dataA3.csv', fileEncoding = 'GBK')
+data10 <- read.csv('data10.csv', fileEncoding = 'GBK')
+
+
+```
+
+
+目录 {.sidebar}
+=====================================     
+
+<br/>  
+
+1. 摘要
+
+2. 特征选择概述  
+    2.1 基本概念    
+    2.2 一般过程    
+    2.3 典型算法  
+
+3. 基于秩的集成特征选择方法 
+    3.1 方法简介    
+    3.2 基于秩的集成特征打分器 
+    
+4. 实验验证   
+    4.1 数据介绍   
+    4.2 实验结果及分析  
+
+5. 总结
+
+
+<br/>
+
+
+
+
+    
+题目 {data-navmenu="摘要"}
+=====================================     
+
+<br/>    
+<br/>     
+<br/>     
+<br/>      
+<br/>   
+
+
+
+<center><font size="+8">基于秩的集成特征选择方法</font></center>
+
+<br/>  
+
+<center><font size="+3">统计学</font></center>
+<center><font size="+3">慕聪</font></center>
+<center><font size="+3">13336151</font></center>
+<center><font size="+3">指导老师：李彩霞</font></center>
+
+
+    
+
+摘要 {data-navmenu="摘要"}
+=====================================     
+
+
+- <font size="+3">背景</font>
+    - <font size="+2">计算机技术在各领域广泛应用</font>
+    - <font size="+2">数据量越来越大</font>
+    - <font size="+2">特征维数越来越高</font>
+       
+
+<br/>    
+
+- <font size="+3">思路</font>
+    - <font size="+2">Filter方法：Pearson相关系数、距离相关系数、互信息</font>
+    - <font size="+2">Wrapper方法：Lasso、RidgeRegression、RandomForest、Adaboost</font>
+    - <font size="+2">求秩处理，归一比较综合得分</font>
+       
+
+<br/>   
+
+
+- <font size="+3">特点</font>
+    - <font size="+2">避免某种方法可能带来的偏差</font>
+    - <font size="+2">具有比较好的实际可理解性</font>
+    - <font size="+2">提升相应模型的性能</font>
+            
+
+
+
+基本概念 {data-navmenu="特征选择概述"}
+=====================================     
+    
+<br/>   
+<br/>   
+
+- <font size="+3">数据预处理</font>
+    - <font size="+2">处理大量冗余信息</font>
+    - <font size="+2">改善数据质量性</font>
+    - <font size="+2">挖掘数据得到有效信息</font>
+   
+     
+<br/>    
+
+- <font size="+3">特征选择</font>
+    - <font size="+2">筛选剔除无关属性</font>
+    - <font size="+2">寻找最优的最小属性子集</font>
+    - <font size="+2">降低数据规模，增加可理解性，改善模型效果</font>
+   
+
+<br/>     
+
+
+
+
+
+一般过程 {data-navmenu="特征选择概述"}
+=====================================  
+  
+  
+Column {.tabset .tabset-fade}
+-------------------------------------
+
+
+### **生成候选子集**
+
+<br/>  
+  
+- <font size="+3">候选子集的生成 = 搜索特征子集寻优</font>
+  
+<br/>   
+
+- <font size="+3">搜索方法依据搜索<font color="red">起点</font>和<font color="red">方向</font>分类</font>     
+    - <font size="+2">前向搜索</font>    
+    - <font size="+2">后向搜索</font>   
+    - <font size="+2">双向搜索</font>    
+    - <font size="+2">随机搜索</font>  
+
+<br/>  
+
+- <font size="+3">搜索方法依据搜索<font color="red">策略</font>分类</font>
+    - <font size="+2">穷举式搜索</font>    
+    - <font size="+2">序列搜索</font>    
+    - <font size="+2">随机搜索</font>   
+
+
+
+
+
+
+### **评价标准评估**
+
+<br/>  
+<br/>   
+<br/>   
+
+- <font size="+3">评价标准评估搜索所得到的候选子集的优劣</font>
+
+<br/>   
+
+- <font size="+3">将评估得到的优劣值和之前的最优值进行比较</font>
+
+<br/>  
+
+- <font size="+3">选择最优的特征子集</font>
+
+
+
+### **终止条件确定最优**
+
+<br/>  
+
+- <font size="+3">终止条件决定何时停止搜索，避免特征搜索进入无限循环状态</font>
+
+<br/>   
+
+- <font size="+3">终止条件的选择则主要受到<font color="red">子集搜索策略</font>和<font color="red">评估函数</font>的影响</font>
+    - <font size="+2">子集搜索策略：特征选择的速度，在最短时间内找到最优解</font>
+    - <font size="+2">评估函数：较高的类别区分能力，使算法性能得到有效提升</font>
+
+<br/>    
+
+- <font size="+3">终止条件依据出发角度分类</font>
+    - <font size="+2">基于搜索策略</font>
+        - <font size="+1">搜索的<font color="red">特征数目</font>达到指定的阈值</font>
+        - <font size="+1">搜索的<font color="red">迭代次数</font>达到指定的阈值</font>
+    - <font size="+2">基于评估函数</font>
+        - <font size="+1">增加或删减特征不能得到更高的评估值</font>
+        - <font size="+1">已经找到使得评估函数取得最优解的特征子集</font>
+
+
+
+### **子集验证**
+
+<br/>
+<br/>   
+<br/>   
+
+- <font size="+3">特征子集的有效性验证是对于特征选择的结果在一定条件下的分类有效性进行评估</font>
+
+<br/>  
+
+- <font size="+3">通常使用某种学习算法对特征选择之后的数据集进行训练和测试</font>
+    - <font size="+2">准确率</font>
+    - <font size="+2">错判率</font>
+    - <font size="+2">复杂度</font>
+
+
+
+典型算法 {data-navmenu="特征选择概述"}
+=====================================  
+
+<br/>  
+
+
+- <font size="+3">从搜索策略的角度出发</font>
+    - <font size="+2">采用全局最优搜索策略的特征选择算法</font>
+    - <font size="+2">采用序列搜索策略的特征选择算法</font>
+    - <font size="+2">采用随机搜索策略的特征选择算法</font>
+
+<br/>   
+
+- <font size="+3">从评价标准出发</font>
+    - <font size="+2" color="red">Filter方法</font>
+        - <font size="+1">与后续的学习算法相独立，一般直接利用训练数据的统计性能来评估特征的重要性</font>
+        - <font size="+1">速度较快，不过评估与后续的学习算法的性能可能会有较大的偏差</font>
+        - <font size="+1">距离度量、依赖性度量、信息度量等</font>
+    - <font size="+2" color="red">Wrapper方法</font>
+        - <font size="+1">利用后续学习算法的准确率等指标来评估特征重要性</font>
+        - <font size="+1">偏差相对较小，不过计算量会更大</font>
+        - <font size="+1">决策树+遗传算法、支持向量机评估等</font>
+
+<br/>   
+
+
+
+
+
+    
+方法简介 {data-navmenu="基于秩的集成特征选择方法"}
+=====================================   
+
+<br/>   
+
+- <font size="+3">基本思路</font>
+    - <font size="+2">选取一定的Filter方法和Wrapper方法对每一个候选特征的重要性进行评价</font>
+    - <font size="+2">借助求秩的处理，将不同方法得到的特征重要性进行归一化</font>
+    - <font size="+2">计算每一个特征的平均秩</font>
+
+<br/>  
+
+- <font size="+3">使用的Filter方法</font>
+    -	<font size="+2">Pearson相关系数</font>
+    - <font size="+2">距离相关系数</font>
+    - <font size="+2">互信息</font>
+
+<br/>
+
+
+- <font size="+3">使用的Wrapper方法</font>
+    -	<font size="+2">Lasso</font>
+    - <font size="+2">Ridge Regression</font>
+    - <font size="+2">RandomForest</font>
+    - <font size="+2">Adaboost</font>
+
+
+
+
+基于秩的集成特征打分器 {data-navmenu="基于秩的集成特征选择方法"}
+=====================================   
+
+<br/>   
+
+- <font size="+3">Pearson相关系数：计算后取绝对值求秩。</font>
+- <font size="+3">距离相关系数：计算后求秩。</font>
+- <font size="+3">互信息：计算后求秩。</font>
+
+<br/> 
+
+- <font size="+3">Lasso：依据<font color="red">特征被选择的优先次序</font>表征该特征在Lasso下的重要性，求秩。</font>
+- <font size="+3">RidgeRegression：使用各特征<font color="red">回归系数的绝对值</font>表征该特征的重要性，求秩。</font>
+- <font size="+3">RandomForest：使用<font color="red">平均精确率减少</font>表征各特征的重要性，求秩。</font>
+- <font size="+3">Adaboost：使用<font color="red">Gini importance index</font>表征各特征的重要性，求秩。</font>
+
+<br/> 
+
+
+- <font size="+3">计算每一个特征7种方法下的<font color="red">平均秩</font>，作为其最后的重要性综合得分。</font>
+
+
+
+
+
+数据介绍 {data-navmenu="实验验证"}
+=====================================   
+
+<br/>
+
+- <font size="+3">数据来源：Wind资讯</font>
+
+<br/>
+
+- <font size="+3">时间区间：2000年1月7日—2016年11月4日 周粒度</font>
+
+<br/>
+
+- <font size="+3">样本量：842</font>
+
+<br/>
+
+- <font size="+3">特征数：58</font>
+
+
+实验结果及分析 {data-navmenu="实验验证"}
+=====================================   
+
+
+Column {.tabset .tabset-fade}
+-------------------------------------
+
+### **依据相关性的特征重要性排序**
+
+```{r}
+kable(dataA1)
+```
+
+
+
+### **依据基于秩的集成特征选择方法的特征重要性排序**
+
+```{r}
+kable(dataA3)
+```
+
+
+
+
+### **预测准确率比较**
+
+```{r}
+highchart() %>% 
+  hc_add_series(temp,"spline",hcaes(x=indexno,y=accuracy,group=model)) %>%
+  hc_add_series(temp1,"spline",hcaes(x=indexno,y=accuracy),name='所有特征直接放入bagging中') %>%
+  hc_add_series(temp2,"spline",hcaes(x=indexno,y=accuracy),name='所有特征直接放入RF中') %>%
+  hc_xAxis(title=list(text='加入的特征数')) %>% 
+  hc_yAxis(title=list(text='预测准确率'))
+
+```
+
+
+
+### **选择特征比较**
+
+
+```{r}
+kable(data10)
+```
+
+
+
+
+
+
+总结 
+=====================================     
+
+<br/>
+
+
+- <font size="+3">Filter方法</font>
+    - <font size="+2">Pearson相关系数</font>
+    - <font size="+2">距离相关系数</font>
+    - <font size="+2">互信息</font>
+- <font size="+3">Wrapper方法</font>
+    - <font size="+2">Lasso</font>
+    - <font size="+2">RidgeRegression</font>
+    - <font size="+2">RandomForest</font>
+    - <font size="+2">Adaboost</font>
+- <font size="+3">特点</font>
+    - <font size="+2">减少偏差</font>
+    - <font size="+2">识别关键特征</font>
+    - <font size="+2">实际可理解性</font>
+- <font size="+3">改进</font>
+    - <font size="+2">不同类型特征差异化处理</font>
+    - <font size="+2">特征间相似性处理</font>
+
+
+
+
+
+
+
