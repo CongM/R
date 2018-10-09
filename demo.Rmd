@@ -1,0 +1,387 @@
+---
+title: "Title"
+author: "Author"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(jsonlite)
+library(dplyr)
+library(stringr)
+library(purrr)
+library(quantmod)
+library(knitr)
+library(DT)
+library(highcharter)
+library(dygraphs)
+library(igraph)
+library(visNetwork)
+library(networkD3)
+
+options(knitr.kable.NA = '')
+```
+
+
+
+Sidebar {.sidebar}
+======================================================================= 
+
+<br/>  
+
+1. [Front Page](#front-page)
+
+2. [Read Me](#read-me)
+
+3. Table  
+    3.1 [knitr](#knitr)   
+    3.2 [DT](#dt)       
+
+4. Plot  
+    4.1 [highcharter](#highcharter)      
+    4.2 [dygraphs](#dygraphs)     
+    4.3 [visNetwork](#visnetwork)    
+    4.4 [networkD3](#networkd3)    
+    
+5. [References](#references)
+
+
+<br/>
+
+
+
+Front Page {data-icon='fa-list'}
+======================================================================= 
+
+<br/>    
+<br/>     
+<br/>     
+<br/>      
+<br/>   
+
+<center><font size="+8">Title</font></center>
+
+<br/>  
+
+<center><font size="+3">Author</font></center>
+<center><font size="+3">Date</font></center>
+
+
+
+Read Me {data-icon='fa-bookmark'}
+======================================================================= 
+
+<br/>    
+<br/>     
+<br/>
+
+- <font size="+3">We use the following packages in this demo</font>
+    - <font size="+2"><b>Set-up:</b> `flexdashboard`</font>
+    - <font size="+2"><b>Data Preparation:</b> `jsonlite`, `dplyr`, `stringr`, `purrr`, `quantmod`</font>
+    - <font size="+2"><b>Table:</b> `knitr`, `DT`</font>
+    - <font size="+2"><b>Plot:</b> `highcharter`, `dygraphs`, `igraph`, `visNetwork`, `networkD3`</font>
+       
+<br/>
+
+- <font size="+3">Some notes</font>
+    - <font size="+2">The demo introduces some libraries that could be useful in visualization. In particular</font>
+        - `highcharter`: used for multiple purposes, such as scatter, histogram, graph, map, etc.
+        - `dygraphs`: used for time series.
+        - `igraph`, `visNetwork`, `networkD3`: used for networks.
+    - <font size="+2">Most examples in this demo are from documents/tutorials of each library</font>
+    - <font size="+2">In general, this demo could be used as a template. After modification (layouts, data, etc) based on requirement, re-run the source file `demo.Rmd` (`Knit to flex_dashboard` in RStudio).</font>
+    - <font size="+2">For more inforamtion, please check [References](#references).</font>
+
+
+
+knitr {data-navmenu='Table'}
+======================================================================= 
+
+
+Column
+-----------------------------------------------------------------------
+
+### **knitr::kable**
+```{r}
+kable(iris, row.names = TRUE)
+```
+
+
+
+DT {data-navmenu='Table'}
+======================================================================= 
+
+
+Column 
+-----------------------------------------------------------------------
+
+### **DT::datatable** 
+```{r}
+datatable(iris, filter = 'top')
+```
+
+
+
+highcharter {data-navmenu='Plot'}
+======================================================================= 
+
+
+Column {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### **Scatter**
+```{r}
+data(diamonds, economics_long, mpg, package = "ggplot2")
+
+hchart(mpg, "scatter", hcaes(x = displ, y = hwy, group = class))
+```
+
+### **Line** 
+```{r}
+data(citytemp)
+
+highchart() %>% 
+  hc_xAxis(categories = citytemp$month) %>% 
+  hc_add_series(name = "Tokyo", data = citytemp$tokyo) %>% 
+  hc_add_series(name = "London", data = citytemp$london) %>% 
+  hc_add_series(name = "Other city", data = (citytemp$tokyo + citytemp$london)/2)
+```
+
+### **Histogram**
+```{r}
+hchart(diamonds$price, name = 'You can zoom in') 
+```
+
+
+### **Density**
+```{r}
+hchart(density(diamonds$price), type = "area", color = "#B71C1C", name = "Price")
+```
+
+
+### **Graph**
+```{r}
+N <- 40
+net <- sample_gnp(N, p = 2/N)
+wc <- cluster_walktrap(net)
+
+V(net)$label <- seq(N)
+V(net)$name <- paste("Node ", seq(N))
+V(net)$page_rank <- round(page.rank(net)$vector, 2)
+V(net)$betweenness <- round(betweenness(net), 2)
+V(net)$degree <- degree(net)
+V(net)$size <- V(net)$degree
+V(net)$comm <- membership(wc)
+V(net)$color <- colorize(membership(wc))
+
+hchart(net, layout = layout_with_fr)
+```
+
+
+### **Stock**
+```{r}
+SPY <- getSymbols("SPY", from = Sys.Date() - lubridate::years(1), auto.assign = FALSE)
+SPY <- adjustOHLC(SPY)
+SPY.SMA.10 <- SMA(Cl(SPY), n = 5)
+SPY.SMA.200 <- SMA(Cl(SPY), n = 100)
+SPY.RSI.14 <- RSI(Cl(SPY))
+SPY.RSI.SellLevel <- xts(rep(70, NROW(SPY)), index(SPY))
+SPY.RSI.BuyLevel <- xts(rep(30, NROW(SPY)), index(SPY))
+
+highchart(type = "stock") %>% 
+  # create axis
+  hc_yAxis_multiples(create_yaxis(3, height = c(2, 1, 1), turnopposite = TRUE)) %>% 
+  # series
+  hc_add_series(SPY, yAxis = 0, name = "SPY") %>% 
+  hc_add_series(SPY.SMA.10, yAxis = 0, name = "Fast MA") %>% 
+  hc_add_series(SPY.SMA.200, yAxis = 0, name = "Slow MA") %>% 
+  hc_add_series(SPY$SPY.Volume, color = "gray", yAxis = 1, type = "column",
+                name = "Volume") %>% 
+  hc_add_series(SPY.RSI.14, yAxis = 2, color = hex_to_rgba("green", 0.7),
+                name = "Osciallator") %>%
+  hc_add_series(SPY.RSI.SellLevel, color = hex_to_rgba("red", 0.7),
+                yAxis = 2, name = "Sell level") %>% 
+  hc_add_series(SPY.RSI.BuyLevel, color = hex_to_rgba("blue", 0.7),
+                yAxis = 2, name = "Buy level") 
+```
+
+
+### **Map**
+```{r}
+mapdata <- get_data_from_map(download_map_data("countries/us/us-all"))
+set.seed(1234)
+data_fake <- mapdata %>% 
+  select(code = `hc-a2`) %>% 
+  mutate(value = 1e5 * abs(rt(nrow(.), df = 10)))
+
+hcmap("countries/us/us-all", data = data_fake, value = "value",
+      joinBy = c("hc-a2", "code"), name = "Fake data",
+      dataLabels = list(enabled = TRUE, format = '{point.name}'),
+      borderColor = "#FAFAFA", borderWidth = 0.1,
+      tooltip = list(valueDecimals = 2, valuePrefix = "$", valueSuffix = " USD")) 
+```
+
+
+### **Custom** 
+```{r}
+colors <- c("#FB1108", "#FD150B", "#FA7806", "#FBE426", "#FCFB8F", "#F3F5E7", "#C7E4EA","#ABD6E6","#9AD2E1")
+
+stars$color <- colorize(log(stars$temp), colors)
+
+x <- c("Luminosity", "Temperature", "Distance")
+y <- sprintf("{point.%s:.2f}", c("lum", "temp", "distance"))
+tltip <- tooltip_table(x, y)
+
+hchart(stars, "scatter", hcaes(temp, lum, size = radiussun, color = color)) %>% 
+  hc_chart(backgroundColor = "black") %>% 
+  hc_xAxis(type = "logarithmic", reversed = TRUE) %>% 
+  hc_yAxis(type = "logarithmic", gridLineWidth = 0) %>% 
+  hc_title(text = "Our nearest Stars") %>% 
+  hc_subtitle(text = "In a Hertzsprung-Russell diagram") %>% 
+  hc_tooltip(useHTML = TRUE, headerFormat = "", pointFormat = tltip) %>% 
+  hc_size(height = 600)
+```
+
+
+
+dygraphs {data-navmenu='Plot'}
+======================================================================= 
+
+
+Column 
+-----------------------------------------------------------------------
+
+### **Time Series** 
+```{r}
+lungDeaths <- cbind(mdeaths, fdeaths)
+
+dygraph(lungDeaths) %>%
+  dySeries("mdeaths", label = "Male") %>%
+  dySeries("fdeaths", label = "Female") %>%
+  dyOptions(stackedGraph = TRUE) %>%
+  dyRangeSelector(height = 20)
+```
+
+
+
+visNetwork {data-navmenu='Plot'}
+======================================================================= 
+
+
+Column {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### **Image** 
+```{r}
+path_to_images <- "https://raw.githubusercontent.com/datastorm-open/datastorm-open.github.io/master/visNetwork/data/img/indonesia/"
+ 
+nodes <- data.frame(id = 1:4, 
+                    shape = c("image", "circularImage"),
+                    image = paste0(path_to_images, 1:4, ".png"),
+                    label = "I'm an image")
+  
+edges <- data.frame(from = c(2,4,3,3), to = c(1,2,4,2))
+
+visNetwork(nodes, edges, width = "100%") %>% 
+  visNodes(shapeProperties = list(useBorderWithImage = TRUE)) %>%
+  visLayout(randomSeed = 2)
+```
+
+### **Icon** 
+```{r}
+nb <- 10
+nodes <- data.frame(id = 1:nb, label = paste("Label", 1:nb),
+ group = sample(LETTERS[1:3], nb, replace = TRUE), value = 1:nb,
+ title = paste0("<p>", 1:nb,"<br>Tooltip !</p>"), stringsAsFactors = FALSE)
+
+edges <- data.frame(from = c(8,2,7,6,1,8,9,4,6,2),
+ to = c(3,7,2,7,9,1,5,3,2,9),
+ value = rnorm(nb, 10), label = paste("Edge", 1:nb),
+ title = paste0("<p>", 1:nb,"<br>Edge Tooltip !</p>"))
+
+visNetwork(nodes, edges, height = "500px", width = "100%") %>% 
+  visGroups(groupname = "A", shape = "icon", 
+            icon = list(code = "f0c0", size = 75)) %>%
+  visGroups(groupname = "B", shape = "icon", 
+            icon = list(code = "f007", color = "red")) %>%
+  visGroups(groupname = "C", shape = "icon", 
+            icon = list(code = "f1b9", color = "black")) %>%
+  visOptions(highlightNearest = list(enabled =TRUE, degree = 2, hover = T)) %>%
+  addFontAwesome() %>%
+  visLayout(randomSeed = 123)
+```
+
+### **Custom** 
+```{r}
+nodes <- fromJSON("https://raw.githubusercontent.com/datastorm-open/datastorm-open.github.io/master/visNetwork/data/nodes_miserables.json")
+
+edges <- fromJSON("https://raw.githubusercontent.com/datastorm-open/datastorm-open.github.io/master/visNetwork/data/edges_miserables.json")
+
+visNetwork(nodes, edges, height = "700px", width = "100%") %>%
+  visOptions(selectedBy = "group", 
+             highlightNearest = TRUE, 
+             nodesIdSelection = TRUE) %>%
+  visPhysics(stabilization = FALSE)
+```
+
+
+
+networkD3 {data-navmenu='Plot'}
+======================================================================= 
+
+Column {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+
+### **simpleNetwork** 
+```{r}
+src <- c("A", "A", "A", "A", "B", "B", "C", "C", "D")
+target <- c("B", "C", "D", "J", "E", "F", "G", "H", "I")
+networkData <- data.frame(src, target)
+
+simpleNetwork(networkData)
+```
+
+### **sankeyNetwork** 
+```{r}
+URL <- paste0("https://cdn.rawgit.com/christophergandrud/networkD3/", "master/JSONdata/energy.json")
+Energy <- fromJSON(URL)
+
+sankeyNetwork(Links = Energy$links, Nodes = Energy$nodes, Source = "source",
+             Target = "target", Value = "value", NodeID = "name",
+             units = "TWh", fontSize = 12, nodeWidth = 30)
+```
+
+
+
+References
+======================================================================= 
+
+
+<br/>    
+<br/>     
+<br/>
+
+- <font size="+3">For more information, please check the following resources</font>
+    - <font size="+2">[R Markdown](https://rmarkdown.rstudio.com/)</font>
+    - <font size="+2">[flexdashboard](https://rmarkdown.rstudio.com/flexdashboard/index.html)</font>
+    - <font size="+2">Table</font>
+        - [`knitr`](https://github.com/yihui/knitr)
+        - [`DT`](https://rstudio.github.io/DT/)
+    - <font size="+2">Plot</font>
+        - [`highcharter`](http://jkunst.com/highcharter/)
+        - [`dygraphs`](https://rstudio.github.io/dygraphs/)
+        - [`visNetwork`](https://datastorm-open.github.io/visNetwork/)
+        - [`networkD3`](https://christophergandrud.github.io/networkD3/)
+       
+<br/>
+
+
+
+
+
+
+
+
